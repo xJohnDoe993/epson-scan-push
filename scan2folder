@@ -1,22 +1,21 @@
 #!/bin/bash
-# Scans with the Epson ET-4800 (epsonds backend), A4, 300 dpi, color,
-# and drops a PDF into the output folder (default: the Paperless consume folder).
+# Scans from the Epson ET-4800 (via SCAN_DEVICE; default: network through the scan-push TLS tunnel)
+# and stores a PDF in a folder (the Paperless consume folder works, too). Used by scan-push on Debian and Fedora.
 # Usage: scan2folder [adf|flatbed] [name]   (default: adf; name: Scan_<date>)
-# Environment: SCAN_DIR (output folder), SCAN_DEVICE, SCAN_RES, SCAN_MODE, SCAN_TRIES
+# Environment: SCAN_DIR (output folder; default ~/Documents/Scans), SCAN_DEVICE, SCAN_RES, SCAN_MODE, SCAN_TRIES
 set -u
-CONSUME="${SCAN_DIR:-/opt/paperless_data/consume}"
-mkdir -p "$CONSUME"
+OUT="${SCAN_DIR:-$(xdg-user-dir DOCUMENTS 2>/dev/null || echo "$HOME/Documents")/Scans}"
 RES="${SCAN_RES:-300}"
 MODE="${SCAN_MODE:-Color}"
+DEV="${SCAN_DEVICE:-epsonds:net:127.0.0.1}"
 case "${1:-adf}" in
   flatbed) SRC=Flatbed ;;
   *)       SRC="ADF Front" ;;
 esac
-DEV="${SCAN_DEVICE:-$(scanimage -f '%d%n' -L 2>/dev/null | grep '^epsonds:' | head -1)}"
-[ -n "$DEV" ] || { echo "Epson scanner not found (set SCAN_DEVICE)" >&2; exit 1; }
 NAME="${2:-Scan_$(date +%F_%H-%M-%S)}"
-TMP=$(mktemp -d /tmp/scan.XXXXXX); trap 'rm -rf "$TMP"' EXIT
-exec 9>/run/lock/scanner.lock; flock 9
+mkdir -p "$OUT"
+TMP=$(mktemp -d "${XDG_RUNTIME_DIR:-/tmp}/scan.XXXXXX"); trap 'rm -rf "$TMP"' EXIT
+exec 9>"${XDG_RUNTIME_DIR:-/tmp}/scanner.lock"; flock 9
 # After waking up the printer often wrongly reports the feeder as empty: up to 3 tries
 # Flatbed: exactly 1 page. Without --batch-count scanimage rescans the glass endlessly
 # (there is no "feeder empty" to end it) and the carriage keeps moving back and forth.
@@ -34,5 +33,5 @@ done
 # "Document feeder out of documents" after the last page is normal
 ls "$TMP"/p*.jpg >/dev/null 2>&1 || { echo "No pages scanned (rc=$rc): $(tail -2 "$TMP/err.log")" >&2; exit 2; }
 img2pdf --pagesize A4 "$TMP"/p*.jpg -o "$TMP/out.pdf"
-mv "$TMP/out.pdf" "$CONSUME/$NAME.pdf"
-echo "OK: $CONSUME/$NAME.pdf ($(ls "$TMP"/p*.jpg | wc -l) pages)"
+mv "$TMP/out.pdf" "$OUT/$NAME.pdf"
+echo "OK: $OUT/$NAME.pdf ($(ls "$TMP"/p*.jpg | wc -l) pages)"

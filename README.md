@@ -46,7 +46,7 @@ The output folder is passed to the service as `SCAN_DIR` (set in the systemd uni
 by editing the unit and restarting the service.
 
 ## Debian (Paperless) - `debian/`
-`debian/install.sh` installs `python3 sane-utils img2pdf util-linux`, `scan-push.py`, `scan2folder` and the unit.
+`debian/install.sh` installs `python3 sane-utils img2pdf util-linux`, `scan-push.py`, `scan2folder` (shared with Fedora) and the unit.
 Not automated: the **JPEG patch** (without it a feeder page takes ~78 s instead of ~23 s). Build `libsane-epsonds`
 with the patch applied (Debian source package `sane-backends`, apply `epsonds-jpeg.patch`, `autoreconf -fi`,
 `./configure BACKENDS=epsonds`, `make -C lib sanei; make -C backend libsane-epsonds.la`, copy

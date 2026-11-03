@@ -39,7 +39,7 @@ apt-get install -y $PACKAGES
 
 echo "== Installing files"
 install -m 755 "$HERE/../scan-push.py" /usr/local/bin/scan-push.py
-install -m 755 "$HERE/scan2folder" /usr/local/bin/scan2folder
+install -m 755 "$HERE/../scan2folder" /usr/local/bin/scan2folder
 mkdir -p "$SCAN_DIR"
 
 echo "== systemd unit"

@@ -47,7 +47,7 @@ fi
 
 echo "== Installing files"
 install -Dm755 "$HERE/../scan-push.py" "$HOME/.local/bin/scan-push.py"
-install -Dm755 "$HERE/scan2folder" "$HOME/.local/bin/scan2folder"
+install -Dm755 "$HERE/../scan2folder" "$HOME/.local/bin/scan2folder"
 mkdir -p "$SCAN_DIR"
 
 echo "== systemd user unit"
