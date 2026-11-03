@@ -1,0 +1,12 @@
+[Unit]
+Description=Epson ET-4800 "Scan to Computer" Empfaenger -> Paperless
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 -u /usr/local/bin/scan-push.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

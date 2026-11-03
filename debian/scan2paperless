@@ -1,0 +1,36 @@
+#!/bin/bash
+# Scannt mit dem Epson ET-4800 (epsonds-Backend), A4, 300 dpi, Farbe,
+# und legt ein PDF im Paperless-Eingang ab.
+# Aufruf: scan2paperless [adf|flatbed] [Name]   (Standard: adf; Name: Scan_<Datum>)
+set -u
+CONSUME=/opt/paperless_data/consume
+RES="${SCAN_RES:-300}"
+MODE="${SCAN_MODE:-Color}"
+case "${1:-adf}" in
+  flatbed) SRC=Flatbed ;;
+  *)       SRC="ADF Front" ;;
+esac
+DEV="${SCAN_DEVICE:-$(scanimage -f '%d%n' -L 2>/dev/null | grep '^epsonds:' | head -1)}"
+[ -n "$DEV" ] || { echo "Epson-Scanner nicht gefunden (SCAN_DEVICE setzen)" >&2; exit 1; }
+NAME="${2:-Scan_$(date +%F_%H-%M-%S)}"
+TMP=$(mktemp -d /tmp/scan.XXXXXX); trap 'rm -rf "$TMP"' EXIT
+exec 9>/run/lock/scanner.lock; flock 9
+# Nach dem Aufwachen meldet der Drucker den Einzug anfangs oft faelschlich als leer: bis zu 3 Versuche
+# Flachbett: genau 1 Seite. Ohne --batch-count scannt scanimage die Glasflaeche endlos immer wieder
+# (kein "Einzug leer" als Ende), der Schlitten faehrt dann vor und zurueck.
+CNT=()
+[ "$SRC" = "Flatbed" ] && CNT=(--batch-count=1)
+for try in 1 2 3; do
+  scanimage -d "$DEV" --source "$SRC" --mode "$MODE" --resolution "$RES" \
+    -x 210 -y 297 --format=jpeg --batch="$TMP/p%04d.jpg" "${CNT[@]}" 2>"$TMP/err.log"
+  rc=$?
+  ls "$TMP"/p*.jpg >/dev/null 2>&1 && break
+  [ "$SRC" = "Flatbed" ] && break
+  grep -q "out of documents" "$TMP/err.log" || break
+  sleep 8
+done
+# "Dokumenteneinzug leer" nach den letzten Seiten ist normal
+ls "$TMP"/p*.jpg >/dev/null 2>&1 || { echo "Keine Seiten gescannt (rc=$rc): $(tail -2 "$TMP/err.log")" >&2; exit 2; }
+img2pdf --pagesize A4 "$TMP"/p*.jpg -o "$TMP/out.pdf"
+mv "$TMP/out.pdf" "$CONSUME/$NAME.pdf"
+echo "OK: $CONSUME/$NAME.pdf ($(ls "$TMP"/p*.jpg | wc -l) Seiten)"

@@ -1,0 +1,16 @@
+[Unit]
+Description=Epson ET-4800 "Scan to Computer" Empfaenger (Fedora-Notebook) -> ~/Dokumente/Scans
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Gepatchtes epsonds (JPEG) hat Vorrang vor dem System-Backend
+Environment=LD_LIBRARY_PATH=%h/.local/lib/sane-jpeg
+Environment=CLIENT_NAME=Notebook
+Environment=SCAN_CMD=%h/.local/bin/scan2folder
+ExecStart=/usr/bin/python3 -u %h/.local/bin/scan-push.py
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=default.target
