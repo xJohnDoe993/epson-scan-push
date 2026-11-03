@@ -9,7 +9,7 @@ Protocol (reverse-engineered from a capture of the Windows software):
      computer appear on the printer under Scan -> Computer.
   3. When a target is selected there, the printer connects to EventPort over TCP and sends
      "POST /PushScan" (SOAP, PushScanIDIn = selected target). We confirm with "200 OK / StatusOut=OK".
-  4. Then we scan (SCAN_CMD, e.g. scan2paperless; Windows connects to TCP 1865 on the printer here).
+  4. Then we scan (SCAN_CMD, e.g. scan2folder; Windows connects to TCP 1865 on the printer here).
 """
 import os
 import re
@@ -27,7 +27,7 @@ PRINTER = os.environ.get("EPSON_PRINTER", "10.0.0.119")
 PORT = 2968
 MCAST = "239.255.255.253"
 NAME = os.environ.get("CLIENT_NAME", socket.gethostname().upper())[:15]
-SCAN_CMD = os.environ.get("SCAN_CMD", "/usr/local/bin/scan2paperless")
+SCAN_CMD = os.environ.get("SCAN_CMD", "/usr/local/bin/scan2folder")
 SERVICE = b"NetScanMonitor-agent"
 
 RESPONSE_BODY = (
@@ -209,7 +209,7 @@ def _run_scan(push_id):
     loaded = adf_loaded()
     sources = ("flatbed",) if loaded is False else ("adf", "flatbed")
     # Only allow the (slow) retries on "empty" if the feeder is known to be loaded; otherwise fall
-    # back to the flatbed immediately (scan2folder reads SCAN_TRIES, scan2paperless ignores it).
+    # back to the flatbed immediately (scan2folder reads SCAN_TRIES).
     env.setdefault("SCAN_TRIES", "3" if loaded else "1")
     log(f"Feeder loaded: {loaded}")
     for source in sources:

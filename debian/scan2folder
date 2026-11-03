@@ -1,8 +1,8 @@
 #!/bin/bash
 # Scans with the Epson ET-4800 (epsonds backend), A4, 300 dpi, color,
 # and drops a PDF into the output folder (default: the Paperless consume folder).
-# Usage: scan2paperless [adf|flatbed] [name]   (default: adf; name: Scan_<date>)
-# Environment: SCAN_DIR (output folder), SCAN_DEVICE, SCAN_RES, SCAN_MODE
+# Usage: scan2folder [adf|flatbed] [name]   (default: adf; name: Scan_<date>)
+# Environment: SCAN_DIR (output folder), SCAN_DEVICE, SCAN_RES, SCAN_MODE, SCAN_TRIES
 set -u
 CONSUME="${SCAN_DIR:-/opt/paperless_data/consume}"
 mkdir -p "$CONSUME"
@@ -22,7 +22,7 @@ exec 9>/run/lock/scanner.lock; flock 9
 # (there is no "feeder empty" to end it) and the carriage keeps moving back and forth.
 CNT=()
 [ "$SRC" = "Flatbed" ] && CNT=(--batch-count=1)
-for try in 1 2 3; do
+for try in $(seq 1 "${SCAN_TRIES:-3}"); do
   scanimage -d "$DEV" --source "$SRC" --mode "$MODE" --resolution "$RES" \
     -x 210 -y 297 --format=jpeg --batch="$TMP/p%04d.jpg" "${CNT[@]}" 2>"$TMP/err.log"
   rc=$?

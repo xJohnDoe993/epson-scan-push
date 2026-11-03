@@ -1,6 +1,6 @@
 #!/bin/bash
 # Scans from the Epson ET-4800 (via SCAN_DEVICE; default: network through the scan-push TLS tunnel)
-# and stores a PDF in a local folder. Counterpart to debian/scan2paperless.
+# and stores a PDF in a local folder. Same script as debian/scan2folder, with different defaults.
 # Usage: scan2folder [adf|flatbed] [name]   (default: adf; name: Scan_<date>)
 # Environment: SCAN_DIR (output folder), SCAN_DEVICE, SCAN_RES, SCAN_MODE, SCAN_TRIES
 set -u
