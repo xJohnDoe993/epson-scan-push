@@ -1,5 +1,5 @@
 [Unit]
-Description=Epson ET-4800 "Scan to Computer" Empfaenger -> Paperless
+Description=Epson ET-4800 "Scan to Computer" receiver -> Paperless
 After=network-online.target
 Wants=network-online.target
 

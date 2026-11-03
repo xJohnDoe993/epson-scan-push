@@ -1,9 +1,11 @@
 #!/bin/bash
-# Scannt mit dem Epson ET-4800 (epsonds-Backend), A4, 300 dpi, Farbe,
-# und legt ein PDF im Paperless-Eingang ab.
-# Aufruf: scan2paperless [adf|flatbed] [Name]   (Standard: adf; Name: Scan_<Datum>)
+# Scans with the Epson ET-4800 (epsonds backend), A4, 300 dpi, color,
+# and drops a PDF into the output folder (default: the Paperless consume folder).
+# Usage: scan2paperless [adf|flatbed] [name]   (default: adf; name: Scan_<date>)
+# Environment: SCAN_DIR (output folder), SCAN_DEVICE, SCAN_RES, SCAN_MODE
 set -u
-CONSUME=/opt/paperless_data/consume
+CONSUME="${SCAN_DIR:-/opt/paperless_data/consume}"
+mkdir -p "$CONSUME"
 RES="${SCAN_RES:-300}"
 MODE="${SCAN_MODE:-Color}"
 case "${1:-adf}" in
@@ -11,13 +13,13 @@ case "${1:-adf}" in
   *)       SRC="ADF Front" ;;
 esac
 DEV="${SCAN_DEVICE:-$(scanimage -f '%d%n' -L 2>/dev/null | grep '^epsonds:' | head -1)}"
-[ -n "$DEV" ] || { echo "Epson-Scanner nicht gefunden (SCAN_DEVICE setzen)" >&2; exit 1; }
+[ -n "$DEV" ] || { echo "Epson scanner not found (set SCAN_DEVICE)" >&2; exit 1; }
 NAME="${2:-Scan_$(date +%F_%H-%M-%S)}"
 TMP=$(mktemp -d /tmp/scan.XXXXXX); trap 'rm -rf "$TMP"' EXIT
 exec 9>/run/lock/scanner.lock; flock 9
-# Nach dem Aufwachen meldet der Drucker den Einzug anfangs oft faelschlich als leer: bis zu 3 Versuche
-# Flachbett: genau 1 Seite. Ohne --batch-count scannt scanimage die Glasflaeche endlos immer wieder
-# (kein "Einzug leer" als Ende), der Schlitten faehrt dann vor und zurueck.
+# After waking up the printer often wrongly reports the feeder as empty: up to 3 tries
+# Flatbed: exactly 1 page. Without --batch-count scanimage rescans the glass endlessly
+# (there is no "feeder empty" to end it) and the carriage keeps moving back and forth.
 CNT=()
 [ "$SRC" = "Flatbed" ] && CNT=(--batch-count=1)
 for try in 1 2 3; do
@@ -29,8 +31,8 @@ for try in 1 2 3; do
   grep -q "out of documents" "$TMP/err.log" || break
   sleep 8
 done
-# "Dokumenteneinzug leer" nach den letzten Seiten ist normal
-ls "$TMP"/p*.jpg >/dev/null 2>&1 || { echo "Keine Seiten gescannt (rc=$rc): $(tail -2 "$TMP/err.log")" >&2; exit 2; }
+# "Document feeder out of documents" after the last page is normal
+ls "$TMP"/p*.jpg >/dev/null 2>&1 || { echo "No pages scanned (rc=$rc): $(tail -2 "$TMP/err.log")" >&2; exit 2; }
 img2pdf --pagesize A4 "$TMP"/p*.jpg -o "$TMP/out.pdf"
 mv "$TMP/out.pdf" "$CONSUME/$NAME.pdf"
-echo "OK: $CONSUME/$NAME.pdf ($(ls "$TMP"/p*.jpg | wc -l) Seiten)"
+echo "OK: $CONSUME/$NAME.pdf ($(ls "$TMP"/p*.jpg | wc -l) pages)"
