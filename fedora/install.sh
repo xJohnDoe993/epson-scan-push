@@ -42,7 +42,7 @@ sudo dnf install -y $PKGS
 
 if [ "$BUILD" = 1 ]; then
   echo "== Building the JPEG-patched epsonds backend (downloads SANE 1.4.0 source and compiles it)"
-  "$HERE/build-epsonds-jpeg.sh"
+  "$HERE/../build-epsonds-jpeg.sh"
 fi
 
 echo "== Installing files"
